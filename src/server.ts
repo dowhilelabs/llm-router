@@ -13,6 +13,7 @@ import type {
   Provider,
 } from "./types.ts";
 import { autoRoute } from "./engines/index.ts";
+import { getLogger, type RouterLogger } from "./logger.ts";
 
 /** Default configuration */
 const DEFAULT_CONFIG: Omit<RouterConfig, "apiKeys"> = {
@@ -114,6 +115,21 @@ export function createApp(config: RouterConfig): Hono {
       engine: config.defaultEngine,
     });
   });
+
+  // Stats endpoint - show routing stats and savings
+  app.get("/stats", (c) => {
+    const logger = getLogger();
+    return c.json({
+      stats: logger.getStats(),
+      recentLogs: logger.getLogs(10),
+    });
+  });
+
+  // Stats summary (text format)
+  app.get("/stats/summary", (c) => {
+    const logger = getLogger();
+    return c.text(logger.getSummary());
+  });
   
   // Engine info
   app.get("/engines", (c) => {
@@ -126,6 +142,10 @@ export function createApp(config: RouterConfig): Hono {
     try {
       const context = buildContext(c, config);
       const decision = await autoRoute(context);
+      const logger = getLogger();
+      
+      // Log the decision for stats tracking
+      const entry = logger.log(context, decision, 0);
       
       return c.json({
         decision: {
@@ -134,9 +154,18 @@ export function createApp(config: RouterConfig): Hono {
           confidence: decision.confidence,
           reasoning: decision.reasoning,
           estimatedCost: decision.estimatedCost,
+          fallbackChain: decision.fallbackChain.map(m => ({ provider: m.provider, model: m.model })),
+        },
+        savings: {
+          baselineCost: entry.baselineCost,
+          selectedCost: entry.estimatedCost,
+          savedAmount: entry.estimatedSavings,
+          savingsPercent: entry.savingsPercent,
+          baselineModel: context.requestedModel || "claude-opus",
         },
         context: {
           prompt: context.prompt.slice(0, 100) + (context.prompt.length > 100 ? "..." : ""),
+          length: context.prompt.length,
         },
       });
     } catch (error) {
@@ -149,6 +178,9 @@ export function createApp(config: RouterConfig): Hono {
   
   // Main proxy endpoint
   app.all("/*", async (c) => {
+    const startTime = Date.now();
+    const logger = getLogger();
+    
     try {
       const context = buildContext(c, config);
       
@@ -158,6 +190,10 @@ export function createApp(config: RouterConfig): Hono {
       
       // Get routing decision
       const decision = await autoRoute(context);
+      const latencyMs = Date.now() - startTime;
+      
+      // Log the routing decision
+      const logEntry = logger.log(context, decision, latencyMs);
       
       if (config.debug) {
         console.log(`[Router] ${decision.config.provider}/${decision.config.model}: ${decision.reasoning}`);
@@ -214,11 +250,16 @@ export function createApp(config: RouterConfig): Hono {
         responseHeaders[key] = value;
       });
       
-      // Add routing debug headers if debug mode
+      // Add routing headers
+      responseHeaders["x-router-model"] = decision.config.model;
+      responseHeaders["x-router-provider"] = decision.config.provider;
+      responseHeaders["x-router-cost"] = decision.estimatedCost.toFixed(6);
+      responseHeaders["x-router-savings"] = logEntry.estimatedSavings.toFixed(6);
+      responseHeaders["x-router-savings-percent"] = logEntry.savingsPercent.toFixed(1);
+      
       if (config.debug) {
         responseHeaders["x-router-decision"] = decision.reasoning;
-        responseHeaders["x-router-model"] = decision.config.model;
-        responseHeaders["x-router-provider"] = decision.config.provider;
+        responseHeaders["x-router-latency-ms"] = latencyMs.toString();
       }
       
       return new Response(response.body, {

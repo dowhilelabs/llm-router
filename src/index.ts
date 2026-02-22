@@ -105,3 +105,10 @@ export { loadConfig };
 export type { RouterConfig } from "./types.ts";
 export { autoRoute, registerEngine, registerFactory } from "./engines/index.ts";
 export { createApp, start } from "./server.ts";
+export { 
+  getLogger, 
+  createLogger,
+  type RoutingLogEntry,
+  type CostStats,
+  type LoggerOptions,
+} from "./logger.ts";
