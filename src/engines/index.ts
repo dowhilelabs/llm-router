@@ -11,6 +11,7 @@ import type {
   DecisionEngineFactory,
 } from "../types.ts";
 import { defaultEngine, DefaultEngine } from "./default.ts";
+import { llmClassifierEngine, LLMClassifierEngine } from "./llm-classifier.ts";
 
 /** Registry of available engines */
 const engines = new Map<string, DecisionEngine>();
@@ -24,7 +25,9 @@ const priorities = new Map<string, number>();
 /** Initialize with default engine */
 export function initializeRegistry(): void {
   registerEngine("default", defaultEngine, 100);
+  registerEngine("llm-classifier", llmClassifierEngine, 80);
   registerFactory("custom", () => new DefaultEngine(), 50);
+  registerFactory("llm", () => new LLMClassifierEngine(), 80);
 }
 
 /** Register an engine instance */
@@ -141,6 +144,11 @@ initializeRegistry();
 
 // Exports
 export { defaultEngine, DefaultEngine };
+export {
+  llmClassifierEngine,
+  LLMClassifierEngine,
+  type LLMClassifierOptions,
+} from "./llm-classifier.ts";
 
 // Convenience routing functions
 export { defaultEngine as decide };

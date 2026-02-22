@@ -10,6 +10,25 @@ import type { ModelConfig, Provider } from "./types.ts";
 /** Built-in model registry */
 export const MODELS: Record<string, ModelConfig> = {
   // Ollama - Local models (free)
+  // Tiny models - best for classification, heartbeats
+  "smollm2-135m": {
+    provider: "ollama" as Provider,
+    model: "smollm2:135m",
+    costPer1kTokens: 0,
+    maxTokens: 4096,
+    contextWindow: 8192,
+    strengths: ["fastest", "free", "classifier", "local"],
+  },
+  "gemma3-270m": {
+    provider: "ollama" as Provider,
+    model: "gemma3:270m",
+    costPer1kTokens: 0,
+    maxTokens: 4096,
+    contextWindow: 32768,
+    strengths: ["fast", "free", "classifier", "local"],
+  },
+
+  // Small models - great for simple tasks
   "gemma-2b": {
     provider: "ollama" as Provider,
     model: "gemma:2b",
@@ -18,13 +37,31 @@ export const MODELS: Record<string, ModelConfig> = {
     contextWindow: 4096,
     strengths: ["simple", "fast", "free", "heartbeat", "classify"],
   },
+  "llama3.2-1b": {
+    provider: "ollama" as Provider,
+    model: "llama3.2:1b",
+    costPer1kTokens: 0,
+    maxTokens: 8192,
+    contextWindow: 8192,
+    strengths: ["simple", "fast", "free", "balanced", "local"],
+  },
+  "llama3.2-3b": {
+    provider: "ollama" as Provider,
+    model: "llama3.2:3b",
+    costPer1kTokens: 0,
+    maxTokens: 8192,
+    contextWindow: 8192,
+    strengths: ["coding", "reasoning", "free", "local"],
+  },
+
+  // Medium models - good all-rounders
   "llama3-8b": {
     provider: "ollama" as Provider,
     model: "llama3:8b",
     costPer1kTokens: 0,
     maxTokens: 8192,
     contextWindow: 8192,
-    strengths: ["coding", "reasoning", "local"],
+    strengths: ["coding", "reasoning", "free", "local"],
   },
   "kimi": {
     provider: "ollama" as Provider,
