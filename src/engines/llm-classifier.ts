@@ -59,10 +59,20 @@ const DEFAULT_OPTIONS: LLMClassifierOptions = {
 const CLASSIFICATION_PROMPT = `You are a prompt classifier. Analyze the user request and classify its complexity.
 
 Classify into one of these tiers:
-- simple: Greetings, one-word answers, simple facts, basic questions (< 50 tokens)
-- medium: Explanations, summaries, creative writing, moderate code help
-- complex: Multi-step reasoning, debugging, refactoring, analysis, detailed planning
-- reasoning: Research, novel problems, system design, philosophy, deep analysis
+- simple: Greetings, one-word answers, simple facts, basic questions (< 50 tokens), status checks
+- medium: Explanations, summaries, creative writing, HOW-TO guides, light analysis
+- complex: Code debugging, refactoring, code review, error fixing, multi-step coding tasks, implementation details
+- reasoning: Research, novel problems, system architecture, algorithm design, debugging complex distributed systems, deep analysis
+
+CODE DETECTION - Check for these indicators:
+- Code blocks (\`\`\` or indentation)
+- Programming keywords: function, class, const, import, export, async, await, return
+- File paths: src/, lib/, .js, .ts, .py, .rb
+- Debugging phrases: "fix this", "error", "bug", "not working", "crashes", "exception"
+- Tool references: git, npm, docker, kubernetes, API, database queries
+- Architecture terms: "microservice", "database schema", "API design", "scalability"
+
+IMPORTANT: Code always requires at least MEDIUM tier. Code with errors or bugs is COMPLEX. System design with code is REASONING.
 
 Respond ONLY with valid JSON in this exact format:
 {
@@ -71,6 +81,11 @@ Respond ONLY with valid JSON in this exact format:
   "reasoning": "brief explanation of why",
   "indicators": ["keyword1", "keyword2"]
 }
+
+Examples:
+- "Hi" -> {"tier": "simple", "confidence": 0.99, "reasoning": "Greeting", "indicators": ["greeting"]}
+- "What is Node.js?" -> {"tier": "medium", "confidence": 0.9, "reasoning": "Concept explanation", "indicators": ["what-is"]}
+- "Fix this bug: \`\`\`code\`\`\`" -> {"tier": "complex", "confidence": 0.95, "reasoning": "Code debugging with error", "indicators": ["code-block", "bug", "fix"]}
 
 User request to classify:
 """
